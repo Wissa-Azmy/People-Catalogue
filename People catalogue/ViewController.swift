@@ -11,11 +11,21 @@ import UIKit
 class ViewController: UICollectionViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
     
     var people = [Person]()
+    let defaults = UserDefaults.standard
 
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addNewPerson))
+        
+        if let peopleData = defaults.value(forKey: "people") as? Data {
+            let jsonDecoder = JSONDecoder()
+            do {
+                people = try jsonDecoder.decode([Person].self, from: peopleData)
+            } catch {
+                print("Error reading people's data.")
+            }
+        }
     }
 
     
@@ -46,6 +56,7 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
         
         let person = Person(name: "Unknown", image: imageName)
         people.append(person)
+        saveData()
         collectionView.reloadData()
         
         dismiss(animated: true)
@@ -54,6 +65,16 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
     func getDocumentsDirectory() -> URL {
         let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
         return paths[0]
+    }
+    
+    func saveData() {
+        let jsonEncoder = JSONEncoder()
+        if let peopleDate = try? jsonEncoder.encode(people) {
+            defaults.set(peopleDate, forKey: "people")
+        } else {
+            print("Error saving people's data.")
+        }
+        
     }
 
 }
@@ -92,6 +113,7 @@ extension ViewController {
         let save = UIAlertAction(title: "Save", style: .default) { [weak self, ac] _ in
             if let newName = ac.textFields?[0].text {
                 self?.people[indexPath.item].name = newName
+                self?.saveData()
                 self?.collectionView.reloadData()
             }
         }
